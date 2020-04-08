@@ -44,23 +44,38 @@ if not response_search:
     pass
 
 json_response_search = response_search.json()
-
+x_min, x_max, y_min, y_max = 0, 999, 0, 999
 org_point = ""
-organization = json_response_search["features"][0]
-org_name = organization["properties"]["CompanyMetaData"]["name"]
-org_address = organization["properties"]["CompanyMetaData"]["address"]
-point = organization["geometry"]["coordinates"]
-org_point += "{0},{1}~".format(point[0], point[1])
-org_point = org_point[:-1]
-delta = "0.03"
-point = str(point[0]) + " " + str(point[1])
-toponym_longitude, toponym_lattitude, delta_x, delta_y = object_pos(point, toponym_coodrinates_pos)
+for i in range(10):
+    organization = json_response_search["features"][i]
+    org_name = organization["properties"]["CompanyMetaData"]["name"]
+    org_address = organization["properties"]["CompanyMetaData"]["address"]
+    point = organization["geometry"]["coordinates"]
+    if point[0] > x_min:
+        x_min = point[0]
+    if point[0] < x_max:
+        x_max = point[0]
+    if point[1] > y_min:
+        y_min = point[1]
+    if point[1] < y_max:
+        y_max = point[1]
+    list_keys_dict = organization["properties"]["CompanyMetaData"]["Hours"]["Availabilities"][0].keys()
+    if "TwentyFourHours" in list_keys_dict:
+        org_point += "{0},{1},pm2dgl~".format(str(point[0]), str(point[1]))
+    elif "Intervals" in list_keys_dict:
+        org_point += "{0},{1},pm2dbl~".format(str(point[0]), str(point[1]))
+    else:
+        org_point += "{0},{1},pm2grl~".format(str(point[0]), str(point[1]))
+point_1 = "{0} {1}".format(str(x_min), str(y_min))
+point_2 = "{0} {1}".format(str(x_max), str(y_max))
+
+toponym_longitude, toponym_lattitude, delta_x, delta_y = object_pos(point_1, point_2)
 
 map_params = {
     "ll": ",".join([toponym_longitude, toponym_lattitude]),
     "spn": ",".join([delta_x, delta_y]),
     "l": "map",
-    "pt": org_point + ",pm2bl~" + ",".join(toponym_coodrinates_pos.split()) + ",pm2al",
+    "pt": "{0}".format(org_point) + ",".join(toponym_coodrinates_pos.split()) + ",pm2al",
 }
 
 map_api_server = "http://static-maps.yandex.ru/1.x/"
